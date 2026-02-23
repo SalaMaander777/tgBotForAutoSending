@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Админ панель{% endblock %} — TG Bot</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>TG Bot Admin</h2>
+                <span class="sidebar-user">{{ username }}</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin/" class="nav-item {% if request.url.path == '/admin/' %}active{% endif %}">
+                    <span class="nav-icon">📊</span> Дашборд
+                </a>
+                <a href="/admin/users" class="nav-item {% if '/admin/users' in request.url.path %}active{% endif %}">
+                    <span class="nav-icon">👥</span> Пользователи
+                </a>
+                <a href="/admin/subscriptions" class="nav-item {% if '/admin/subscriptions' in request.url.path %}active{% endif %}">
+                    <span class="nav-icon">📋</span> Подписки
+                </a>
+                <a href="/admin/broadcast" class="nav-item {% if '/admin/broadcast' in request.url.path %}active{% endif %}">
+                    <span class="nav-icon">📢</span> Рассылка
+                </a>
+                <a href="/admin/settings" class="nav-item {% if '/admin/settings' in request.url.path %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span> Настройки
+                </a>
+                <a href="/admin/export/users.csv" class="nav-item">
+                    <span class="nav-icon">📥</span> Экспорт CSV
+                </a>
+                <a href="/admin/logout" class="nav-item nav-logout">
+                    <span class="nav-icon">🚪</span> Выйти
+                </a>
+            </nav>
+        </aside>
+        <main class="content">
+            <div class="content-inner">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Рассылка{% endblock %}
+{% block content %}
+<h1 class="page-title">Рассылка</h1>
+
+{% if success %}
+<div class="alert alert-success">{{ success }}</div>
+{% endif %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="form-card">
+    <h2>Новая рассылка</h2>
+    <form method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="text">Текст сообщения</label>
+            <textarea id="text" name="text" rows="6"
+                      placeholder="Введите текст рассылки... (необязательно, если есть изображение)"></textarea>
+            <small class="form-hint">Поддерживается HTML-форматирование</small>
+        </div>
+        <div class="form-group">
+            <label for="image">Изображение</label>
+            <input type="file" id="image" name="image" accept="image/*">
+            <small class="form-hint">Необязательно. При наличии будет отправлено фото с текстом как подписью</small>
+        </div>
+        <button type="submit" class="btn btn-primary">Запустить рассылку</button>
+    </form>
+</div>
+
+{% if broadcasts %}
+<div class="section">
+    <h2>История рассылок</h2>
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Тип</th>
+                    <th>Дата</th>
+                    <th>Отправлено</th>
+                    <th>Ошибок</th>
+                    <th>Текст</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bc in broadcasts %}
+                <tr>
+                    <td>{{ bc.id }}</td>
+                    <td>
+                        {% if bc.type == 'text' %}📝 Текст
+                        {% elif bc.type == 'image' %}🖼 Фото
+                        {% else %}🖼📝 Фото+текст
+                        {% endif %}
+                    </td>
+                    <td>{{ bc.sent_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td><span class="badge badge-success">{{ bc.total_sent }}</span></td>
+                    <td>{% if bc.failed > 0 %}<span class="badge badge-error">{{ bc.failed }}</span>{% else %}0{% endif %}</td>
+                    <td class="text-truncate">{{ (bc.text or '')[:80] }}{% if bc.text and bc.text|length > 80 %}...{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

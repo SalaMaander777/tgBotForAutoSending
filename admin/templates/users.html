@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Пользователи</h1>
+    <div class="page-actions">
+        <span class="badge">Всего: {{ total }}</span>
+        <a href="/admin/export/users.csv" class="btn btn-secondary btn-sm">📥 Экспорт CSV</a>
+    </div>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Telegram ID</th>
+                <th>Username</th>
+                <th>Имя</th>
+                <th>Фамилия</th>
+                <th>Дата регистрации</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr class="{% if user.is_blocked %}row-blocked{% endif %}">
+                <td><code>{{ user.telegram_id }}</code></td>
+                <td>{% if user.username %}<a href="https://t.me/{{ user.username }}" target="_blank">@{{ user.username }}</a>{% else %}—{% endif %}</td>
+                <td>{{ user.first_name or '—' }}</td>
+                <td>{{ user.last_name or '—' }}</td>
+                <td>{{ user.joined_at.strftime('%d.%m.%Y %H:%M') if user.joined_at else '—' }}</td>
+                <td>
+                    {% if user.is_blocked %}
+                    <span class="status-badge status-blocked">Заблокирован</span>
+                    {% elif user.is_subscribed %}
+                    <span class="status-badge status-active">Подписан</span>
+                    {% else %}
+                    <span class="status-badge status-inactive">Отписан</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/admin/users/{{ user.telegram_id }}/message" class="btn btn-primary btn-xs">Написать</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="empty-state">Нет пользователей</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}" class="btn btn-secondary btn-sm">← Назад</a>
+    {% endif %}
+    <span class="pagination-info">Страница {{ page }} из {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="?page={{ page + 1 }}" class="btn btn-secondary btn-sm">Вперёд →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

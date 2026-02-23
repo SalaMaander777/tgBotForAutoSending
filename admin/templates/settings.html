@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Настройки{% endblock %}
+{% block content %}
+<h1 class="page-title">Настройки</h1>
+
+{% if success %}
+<div class="alert alert-success">{{ success }}</div>
+{% endif %}
+
+<form method="post" class="form-card">
+    <div class="form-group">
+        <label for="welcome_message">Приветственное сообщение</label>
+        <textarea id="welcome_message" name="welcome_message" rows="5"
+                  placeholder="Текст, который пользователь получит при /start">{{ settings.get('welcome_message', '') }}</textarea>
+        <small class="form-hint">Поддерживается HTML-форматирование. Используется при команде /start.</small>
+    </div>
+    <div class="form-group">
+        <label for="channel_link">Ссылка на канал (запасная)</label>
+        <input type="url" id="channel_link" name="channel_link"
+               value="{{ settings.get('channel_link', '') }}"
+               placeholder="https://t.me/your_channel">
+        <small class="form-hint">Используется как запасная ссылка, если не удаётся создать персональную ссылку для приглашения.</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Сохранить настройки</button>
+</form>
+{% endblock %}

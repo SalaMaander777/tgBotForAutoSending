@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Сообщение пользователю{% endblock %}
+{% block content %}
+<div class="page-header">
+    <a href="/admin/users" class="btn btn-secondary btn-sm">← Назад</a>
+    <h1 class="page-title">Отправить сообщение</h1>
+</div>
+
+<div class="user-info-card">
+    <div class="user-info-row">
+        <span class="label">Telegram ID:</span>
+        <code>{{ user.telegram_id }}</code>
+    </div>
+    <div class="user-info-row">
+        <span class="label">Username:</span>
+        <span>{% if user.username %}<a href="https://t.me/{{ user.username }}" target="_blank">@{{ user.username }}</a>{% else %}—{% endif %}</span>
+    </div>
+    <div class="user-info-row">
+        <span class="label">Имя:</span>
+        <span>{{ user.first_name or '—' }} {{ user.last_name or '' }}</span>
+    </div>
+    <div class="user-info-row">
+        <span class="label">Статус:</span>
+        <span>{% if user.is_blocked %}<span class="status-badge status-blocked">Заблокирован</span>{% else %}<span class="status-badge status-active">Активен</span>{% endif %}</span>
+    </div>
+</div>
+
+{% if success %}
+<div class="alert alert-success">{{ success }}</div>
+{% endif %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+{% if not user.is_blocked %}
+<form method="post" class="form-card">
+    <div class="form-group">
+        <label for="text">Текст сообщения</label>
+        <textarea id="text" name="text" rows="6" required
+                  placeholder="Введите сообщение..."></textarea>
+        <small class="form-hint">Поддерживается HTML-форматирование (bold, italic, code и др.)</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Отправить сообщение</button>
+</form>
+{% else %}
+<div class="alert alert-warning">Пользователь заблокировал бота. Отправка сообщений невозможна.</div>
+{% endif %}
+{% endblock %}

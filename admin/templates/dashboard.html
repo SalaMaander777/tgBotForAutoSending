@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Дашборд{% endblock %}
+{% block content %}
+<h1 class="page-title">Дашборд</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ total_users }}</div>
+            <div class="stat-label">Всего пользователей</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ subscribed }}</div>
+            <div class="stat-label">Подписались</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">❌</div>
+        <div class="stat-info">
+            <div class="stat-value">{{ unsubscribed }}</div>
+            <div class="stat-label">Отписались</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+            <div class="stat-value">
+                {% if subscribed > 0 %}
+                    {{ "%.1f"|format((subscribed - unsubscribed) / subscribed * 100) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+            <div class="stat-label">Удержание</div>
+        </div>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <h2>Быстрые действия</h2>
+    <div class="action-buttons">
+        <a href="/admin/broadcast" class="btn btn-primary">📢 Новая рассылка</a>
+        <a href="/admin/users" class="btn btn-secondary">👥 Пользователи</a>
+        <a href="/admin/export/users.csv" class="btn btn-secondary">📥 Экспорт CSV</a>
+        <a href="/admin/settings" class="btn btn-secondary">⚙️ Настройки</a>
+    </div>
+</div>
+{% endblock %}

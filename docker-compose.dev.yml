@@ -1,0 +1,22 @@
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.bot
+    command: uvicorn admin.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      BOT_MODE: polling
+      DEBUG: "true"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    # Override: no nginx in dev
+
+  nginx:
+    profiles:
+      - prod  # nginx only starts in prod profile

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Подписки{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">История подписок</h1>
+    <span class="badge">Всего событий: {{ total }}</span>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Пользователь</th>
+                <th>Событие</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td>{{ event.id }}</td>
+                <td>
+                    <a href="/admin/users/{{ event.user_id }}/message">
+                        <code>{{ event.user_id }}</code>
+                    </a>
+                    {% if event.user and event.user.username %}
+                        <span class="text-muted">@{{ event.user.username }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if event.event_type == 'subscribed' %}
+                    <span class="status-badge status-active">✅ Подписался</span>
+                    {% else %}
+                    <span class="status-badge status-blocked">❌ Отписался</span>
+                    {% endif %}
+                </td>
+                <td>{{ event.occurred_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" class="empty-state">Нет событий</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}" class="btn btn-secondary btn-sm">← Назад</a>
+    {% endif %}
+    <span class="pagination-info">Страница {{ page }} из {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="?page={{ page + 1 }}" class="btn btn-secondary btn-sm">Вперёд →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
