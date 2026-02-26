@@ -26,8 +26,9 @@ async def on_user_subscribed(event: ChatMemberUpdated, session: AsyncSession) ->
         username=user.username,
         first_name=user.first_name,
         last_name=user.last_name,
+        bot_token=event.bot.token,
     )
-    await set_user_subscribed(session, user.id, subscribed=True)
+    await set_user_subscribed(session, user.id, bot_token=event.bot.token, subscribed=True)
     await create_event(session, user_id=user.id, event_type="subscribed")
 
 
@@ -42,6 +43,7 @@ async def on_user_unsubscribed(event: ChatMemberUpdated, session: AsyncSession) 
         username=user.username,
         first_name=user.first_name,
         last_name=user.last_name,
+        bot_token=event.bot.token,
     )
-    await set_user_subscribed(session, user.id, subscribed=False)
+    await set_user_subscribed(session, user.id, bot_token=event.bot.token, subscribed=False)
     await create_event(session, user_id=user.id, event_type="unsubscribed")

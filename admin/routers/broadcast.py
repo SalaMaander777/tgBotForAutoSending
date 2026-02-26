@@ -117,6 +117,7 @@ async def send_broadcast(
             broadcast_id=broadcast.id,
             text=text_clean,
             image_file_id=image_file_id,
+            bot_token=bot.token,
         )
     )
 

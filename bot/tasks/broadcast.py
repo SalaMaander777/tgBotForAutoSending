@@ -17,13 +17,14 @@ async def run_broadcast(
     broadcast_id: int,
     text: str | None,
     image_file_id: str | None,
+    bot_token: str | None = None,
 ) -> None:
     logger.info(f"Starting broadcast {broadcast_id}")
     total_sent = 0
     failed = 0
 
     async with AsyncSessionLocal() as session:
-        users = await get_all_active_users(session)
+        users = await get_all_active_users(session, bot_token=bot_token)
 
     logger.info(f"Broadcast {broadcast_id}: {len(users)} users to notify")
 
@@ -49,7 +50,7 @@ async def run_broadcast(
         except TelegramForbiddenError:
             logger.info(f"User {user.telegram_id} blocked the bot, marking as blocked")
             async with AsyncSessionLocal() as session:
-                await mark_user_blocked(session, user.telegram_id)
+                await mark_user_blocked(session, user.telegram_id, user.bot_token)
             failed += 1
         except TelegramRetryAfter as exc:
             logger.warning(f"Rate limited, sleeping {exc.retry_after}s")

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.inline import channel_join_keyboard
 from core.crud.settings import get_setting
-from core.crud.users import upsert_user
+from core.crud.users import set_user_subscribed, upsert_user
 
 router = Router()
 
@@ -23,6 +23,7 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
         username=user.username,
         first_name=user.first_name,
         last_name=user.last_name,
+        bot_token=message.bot.token,
     )
 
     welcome_text = await get_setting(session, "welcome_message")
@@ -33,6 +34,16 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
     keyboard = None
     channel_id_str = await get_setting(session, "channel_id")
     channel_id = int(channel_id_str) if channel_id_str else 0
+
+    # Sync subscription status with the actual channel membership
+    if channel_id:
+        try:
+            member = await message.bot.get_chat_member(chat_id=channel_id, user_id=user.id)
+            is_subscribed = member.status in ("member", "administrator", "creator")
+            await set_user_subscribed(session, user.id, bot_token=message.bot.token, subscribed=is_subscribed)
+        except Exception as exc:
+            logger.warning(f"Could not check membership for user {user.id} in channel {channel_id}: {exc}")
+
     if channel_id:
         try:
             link = await message.bot.create_chat_invite_link(

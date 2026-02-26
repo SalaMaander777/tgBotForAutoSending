@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from core.models.channel_event import ChannelEvent
+from core.models.user import User
 
 
 async def create_event(
@@ -34,15 +35,17 @@ async def get_events_paginated(
     return events, total
 
 
-async def count_subscribed(session: AsyncSession) -> int:
-    result = await session.execute(
-        select(func.count()).select_from(ChannelEvent).where(ChannelEvent.event_type == "subscribed")
-    )
+async def count_subscribed(session: AsyncSession, bot_token: str | None = None) -> int:
+    q = select(func.count()).select_from(User).where(User.is_subscribed == True)  # noqa: E712
+    if bot_token:
+        q = q.where(User.bot_token == bot_token)
+    result = await session.execute(q)
     return result.scalar_one()
 
 
-async def count_unsubscribed(session: AsyncSession) -> int:
-    result = await session.execute(
-        select(func.count()).select_from(ChannelEvent).where(ChannelEvent.event_type == "unsubscribed")
-    )
+async def count_unsubscribed(session: AsyncSession, bot_token: str | None = None) -> int:
+    q = select(func.count()).select_from(User).where(User.is_subscribed == False)  # noqa: E712
+    if bot_token:
+        q = q.where(User.bot_token == bot_token)
+    result = await session.execute(q)
     return result.scalar_one()

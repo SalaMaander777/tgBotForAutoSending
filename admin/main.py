@@ -61,12 +61,14 @@ async def _stop_bot(app: FastAPI) -> None:
         logger.info("Webhook deleted")
     else:
         polling_task = getattr(app.state, "polling_task", None)
-        if polling_task:
-            polling_task.cancel()
+        if polling_task and not polling_task.done():
+            dp = app.state.dp
+            await dp.stop_polling()
+            # Give the polling task a moment to finish gracefully
             try:
-                await polling_task
-            except Exception:
-                pass
+                await asyncio.wait_for(asyncio.shield(polling_task), timeout=5.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError, Exception):
+                polling_task.cancel()
         app.state.polling_task = None
     await bot.session.close()
     logger.info("Bot session closed")

@@ -6,6 +6,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from admin.auth import require_auth
+from core.config import settings as app_settings
+from core.crud.settings import get_setting
 from core.crud.users import get_user, get_users_paginated, mark_user_blocked
 from core.database import get_db
 
@@ -22,7 +24,8 @@ async def users_list(
     username: str = Depends(require_auth),
 ) -> HTMLResponse:
     offset = (page - 1) * PAGE_SIZE
-    users, total = await get_users_paginated(session, offset=offset, limit=PAGE_SIZE)
+    bot_token = await get_setting(session, "bot_token") or app_settings.bot_token or None
+    users, total = await get_users_paginated(session, offset=offset, limit=PAGE_SIZE, bot_token=bot_token)
     total_pages = (total + PAGE_SIZE - 1) // PAGE_SIZE
 
     return request.app.state.templates.TemplateResponse(
@@ -42,10 +45,11 @@ async def users_list(
 async def user_message_form(
     request: Request,
     user_id: int,
+    bot_token: str,
     session: AsyncSession = Depends(get_db),
     username: str = Depends(require_auth),
 ) -> HTMLResponse:
-    user = await get_user(session, user_id)
+    user = await get_user(session, user_id, bot_token)
     if user is None:
         return HTMLResponse("Пользователь не найден", status_code=404)
 
@@ -65,12 +69,13 @@ async def user_message_form(
 async def send_user_message(
     request: Request,
     user_id: int,
+    bot_token: str,
     text: str = Form(default=""),
     image: UploadFile = File(default=None),
     session: AsyncSession = Depends(get_db),
     username: str = Depends(require_auth),
 ) -> HTMLResponse:
-    user = await get_user(session, user_id)
+    user = await get_user(session, user_id, bot_token)
     if user is None:
         return HTMLResponse("Пользователь не найден", status_code=404)
 
@@ -125,7 +130,7 @@ async def send_user_message(
                 await bot.send_message(chat_id=user_id, text=text_clean, parse_mode="HTML")
             success = "Сообщение успешно отправлено"
         except TelegramForbiddenError:
-            await mark_user_blocked(session, user_id)
+            await mark_user_blocked(session, user_id, bot_token)
             error = "Пользователь заблокировал бота"
         except TelegramBadRequest as exc:
             error = f"Ошибка Telegram: {exc.message}"

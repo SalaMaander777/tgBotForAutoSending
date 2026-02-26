@@ -19,6 +19,7 @@
                 <th>Фамилия</th>
                 <th>Дата регистрации</th>
                 <th>Статус</th>
+                <th>Бот</th>
                 <th>Действия</th>
             </tr>
         </thead>
@@ -39,13 +40,14 @@
                     <span class="status-badge status-inactive">Отписан</span>
                     {% endif %}
                 </td>
+                <td>{% if user.bot_token %}<code title="{{ user.bot_token }}">…{{ user.bot_token[-8:] }}</code>{% else %}—{% endif %}</td>
                 <td>
-                    <a href="/admin/users/{{ user.telegram_id }}/message" class="btn btn-primary btn-xs">Написать</a>
+                    <a href="/admin/users/{{ user.telegram_id }}/message?bot_token={{ user.bot_token }}" class="btn btn-primary btn-xs">Написать</a>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" class="empty-state">Нет пользователей</td>
+                <td colspan="8" class="empty-state">Нет пользователей</td>
             </tr>
             {% endfor %}
         </tbody>
