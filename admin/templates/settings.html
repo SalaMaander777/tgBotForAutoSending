@@ -6,8 +6,26 @@
 {% if success %}
 <div class="alert alert-success">{{ success }}</div>
 {% endif %}
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
 
 <form method="post" class="form-card">
+    <div class="form-group">
+        <label for="bot_token">Токен бота</label>
+        <input type="password" id="bot_token" name="bot_token"
+               value="{{ settings.get('bot_token', '') }}"
+               placeholder="1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"
+               autocomplete="off">
+        <small class="form-hint">Токен от @BotFather. При изменении бот автоматически перезапустится.</small>
+    </div>
+    <div class="form-group">
+        <label for="channel_id">ID канала</label>
+        <input type="text" id="channel_id" name="channel_id"
+               value="{{ settings.get('channel_id', '') }}"
+               placeholder="-1001234567890">
+        <small class="form-hint">Отрицательное число — ID вашего Telegram-канала. Бот должен быть администратором канала.</small>
+    </div>
     <div class="form-group">
         <label for="welcome_message">Приветственное сообщение</label>
         <textarea id="welcome_message" name="welcome_message" rows="5"

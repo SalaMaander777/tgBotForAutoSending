@@ -5,6 +5,8 @@ from core.models.setting import Setting
 DEFAULT_SETTINGS = {
     "welcome_message": "Добро пожаловать! Нажмите кнопку ниже, чтобы вступить в канал.",
     "channel_link": "",
+    "bot_token": "",
+    "channel_id": "",
 }
 
 

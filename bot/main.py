@@ -4,12 +4,11 @@ from aiogram.enums import ParseMode
 
 from bot.handlers import channel_events, errors, start
 from bot.middlewares.db import DbSessionMiddleware
-from core.config import settings
 
 
-def create_bot() -> Bot:
+def create_bot(token: str) -> Bot:
     return Bot(
-        token=settings.bot_token,
+        token=token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
 

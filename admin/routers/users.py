@@ -97,11 +97,14 @@ async def send_user_message(
     image_file_id: str | None = None
     if has_image:
         try:
-            from core.config import settings as app_settings
+            from core.crud.settings import get_setting as _get_setting
 
             image_bytes = await image.read()
             input_file = BufferedInputFile(image_bytes, filename=image.filename)
-            upload_chat = app_settings.channel_id
+            channel_id_str = await _get_setting(session, "channel_id")
+            upload_chat = int(channel_id_str) if channel_id_str else 0
+            if not upload_chat:
+                raise ValueError("ID канала не настроен. Укажите его в /admin/settings.")
             sent = await bot.send_photo(chat_id=upload_chat, photo=input_file)
             try:
                 await bot.delete_message(chat_id=upload_chat, message_id=sent.message_id)

@@ -5,16 +5,13 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # Bot
-    bot_token: str
+    bot_token: str = ""  # Managed via admin panel /admin/settings
     bot_mode: str = "polling"  # webhook | polling
 
     # Webhook (required when bot_mode=webhook)
     webhook_base_url: str = ""
     webhook_path: str = "/webhook/bot"
     webhook_secret: str = ""
-
-    # Channel
-    channel_id: int = 0
 
     # Database
     database_url: str = "postgresql+asyncpg://postgres:password@localhost:5432/tgbot"

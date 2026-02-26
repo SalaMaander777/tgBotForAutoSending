@@ -5,7 +5,6 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.inline import channel_join_keyboard
-from core.config import settings
 from core.crud.settings import get_setting
 from core.crud.users import upsert_user
 
@@ -32,15 +31,17 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
 
     # Try to create a single-use invite link for the channel
     keyboard = None
-    if settings.channel_id:
+    channel_id_str = await get_setting(session, "channel_id")
+    channel_id = int(channel_id_str) if channel_id_str else 0
+    if channel_id:
         try:
             link = await message.bot.create_chat_invite_link(
-                chat_id=settings.channel_id,
+                chat_id=channel_id,
                 member_limit=1,
             )
             keyboard = channel_join_keyboard(link.invite_link)
         except Exception as exc:
-            logger.warning(f"Could not create invite link for channel {settings.channel_id}: {exc}")
+            logger.warning(f"Could not create invite link for channel {channel_id}: {exc}")
             # Fall back to stored channel link
             channel_link = await get_setting(session, "channel_link")
             if channel_link:
