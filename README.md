@@ -5,10 +5,13 @@ A Telegram bot with a web-based admin panel for managing subscribers and sending
 ## Features
 
 - **Subscription tracking** — tracks when users subscribe/unsubscribe from a Telegram channel
-- **Broadcast system** — send text or image messages to all subscribers with rate limiting
-- **Admin panel** — web UI for managing users, broadcasts, and settings
+- **Broadcast system** — send text, image, or image+text messages to all subscribers with rate limiting
+- **Admin panel** — web UI for managing users, broadcasts, settings, and subscription history
 - **Invite links** — auto-generates personal invite links for new users
 - **Export** — download user list as CSV
+- **Multi-bot support** — composite PK `(telegram_id, bot_token)` allows one DB for multiple bots
+- **Dynamic bot token** — change bot token via admin panel without redeployment
+- **Tracker integration** — sends postback on `/start` with referral parameter
 
 ## Stack
 
@@ -31,9 +34,9 @@ A Telegram bot with a web-based admin panel for managing subscribers and sending
 
 ```bash
 cp .env.example .env
-# Edit .env — fill in BOT_TOKEN, CHANNEL_ID, DATABASE_URL, ADMIN_PASSWORD_HASH
+# Edit .env — fill in BOT_TOKEN (optional), CHANNEL_ID, DATABASE_URL, ADMIN_PASSWORD_HASH
 python scripts/create_admin.py  # generates ADMIN_PASSWORD_HASH
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
 Admin panel will be available at: http://localhost:8000/admin
@@ -43,7 +46,7 @@ Admin panel will be available at: http://localhost:8000/admin
 ```bash
 cp .env.example .env
 # Edit .env — fill in all variables including WEBHOOK_BASE_URL
-docker-compose up -d
+docker compose up --build -d
 ```
 
 ### Run without Docker
@@ -57,9 +60,11 @@ python -m uvicorn admin.main:app --host 0.0.0.0 --port 8000
 
 | Variable | Description |
 |----------|-------------|
-| `BOT_TOKEN` | Telegram bot token from @BotFather |
+| `BOT_TOKEN` | Telegram bot token (can also be set via admin panel) |
 | `BOT_MODE` | `webhook` (prod) or `polling` (dev) |
 | `WEBHOOK_BASE_URL` | Public HTTPS URL for webhook (prod only) |
+| `WEBHOOK_PATH` | Webhook path, default `/webhook/bot` |
+| `WEBHOOK_SECRET` | Random secret for webhook validation |
 | `CHANNEL_ID` | Telegram channel ID (negative number, e.g. `-1001234567890`) |
 | `DATABASE_URL` | PostgreSQL asyncpg URL (e.g. `postgresql+asyncpg://user:pass@host/db`) |
 | `ADMIN_USERNAME` | Admin panel login |
@@ -70,34 +75,48 @@ python -m uvicorn admin.main:app --host 0.0.0.0 --port 8000
 
 ```
 ├── bot/
-│   ├── handlers/         # Telegram update handlers
-│   ├── middlewares/      # DB session middleware
-│   ├── keyboards/        # Inline keyboards
-│   └── tasks/            # Background tasks (broadcast)
+│   ├── handlers/
+│   │   ├── start.py          # /start handler: upsert user, invite link, tracker postback
+│   │   ├── channel_events.py # ChatMemberUpdated: sub/unsub tracking
+│   │   └── errors.py         # Global error handler (TelegramForbiddenError)
+│   ├── keyboards/
+│   │   └── inline.py         # Channel join button
+│   ├── middlewares/
+│   │   └── db.py             # DB session injection into handlers
+│   └── tasks/
+│       └── broadcast.py      # Background broadcast task
 ├── admin/
-│   ├── routers/          # FastAPI route handlers
-│   ├── templates/        # Jinja2 HTML templates
-│   └── auth.py           # Session-based authentication
+│   ├── routers/
+│   │   ├── dashboard.py      # Statistics overview
+│   │   ├── users.py          # User list + send individual message
+│   │   ├── broadcast.py      # Bulk message sending
+│   │   ├── settings.py       # Bot token, channel, password settings
+│   │   ├── exports.py        # CSV export of users
+│   │   └── subscriptions.py  # Subscription event history
+│   ├── templates/            # 8 Jinja2 HTML templates
+│   ├── main.py               # FastAPI app factory, lifespan, webhook mount
+│   └── auth.py               # Session-based authentication
 ├── core/
-│   ├── models/           # SQLAlchemy ORM models
-│   ├── crud/             # Database operations
-│   ├── config.py         # Settings via pydantic-settings
-│   └── database.py       # Async engine + session factory
-├── migrations/           # Alembic migrations
+│   ├── models/               # User, ChannelEvent, Setting, Broadcast
+│   ├── crud/                 # users, channel_events, settings, broadcasts
+│   ├── config.py             # Settings via pydantic-settings
+│   └── database.py           # Async engine + session factory
+├── migrations/
+│   └── versions/             # 4 Alembic migrations (initial → composite PK)
 ├── scripts/
-│   └── create_admin.py   # Generate bcrypt password hash
-├── static/css/           # Admin panel styles
-└── docker/               # Dockerfile + nginx config
+│   └── create_admin.py       # Generate bcrypt password hash
+├── static/css/               # Admin panel styles
+└── docker/                   # Dockerfile + nginx.conf
 ```
 
 ## Database Models
 
 | Model | Description |
 |-------|-------------|
-| `users` | Telegram users who started the bot |
-| `channel_events` | Subscribe/unsubscribe events per user |
-| `settings` | Key-value config (welcome message, channel link) |
-| `broadcasts` | Broadcast history with delivery stats |
+| `users` | Telegram users; composite PK `(telegram_id, bot_token)` |
+| `channel_events` | Subscribe/unsubscribe events per user (no FK constraint) |
+| `settings` | Key-value config: `bot_token`, `channel_id`, `welcome_message`, `channel_link`, `admin_password_hash` |
+| `broadcasts` | Broadcast history with delivery stats (`total_sent`, `failed`) |
 
 ## Migrations
 
@@ -109,12 +128,20 @@ alembic upgrade head
 alembic revision --autogenerate -m "description"
 ```
 
+Migration history:
+- `0001_initial` — initial schema
+- `0002_add_is_subscribed` — add `is_subscribed` to users
+- `0003_add_bot_token_to_users` — add `bot_token` column
+- `0004_composite_pk_users` — composite PK `(telegram_id, bot_token)`, drop FK from channel_events
+
 ## Architecture Notes
 
 - **Single process**: bot (aiogram) + admin panel (FastAPI) run together in one uvicorn process
 - **Broadcast rate limit**: 25 messages per batch, 1 second between batches (stays under Telegram's 30/s limit)
-- **Image broadcasts**: image is uploaded once to get a `file_id`, then reused for all recipients
+- **Image broadcasts**: image is uploaded once (via `BufferedInputFile`) to get a `file_id`, then reused for all recipients
 - **Auth**: cookie-based session using `itsdangerous.TimestampSigner` + bcrypt password verification
+- **Dynamic bot token**: changing token in `/admin/settings` calls `restart_bot()` without restarting the process
+- **Webhook handler**: `AppStateRequestHandler` reads bot from `app.state.bot` to support dynamic token updates
 
 ---
 
