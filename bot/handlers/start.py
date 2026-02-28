@@ -1,3 +1,4 @@
+import httpx
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.types import Message
@@ -10,12 +11,32 @@ from core.crud.users import mark_user_unblocked, set_user_subscribed, upsert_use
 
 router = Router()
 
+TRACKER_WEBHOOK_URL = "https://thedinator.com/tracker/bot/webhook/oOZ66Ig5"
+
+
+async def _send_tracker_postback(user_id: int, subscriber_id: str) -> None:
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.get(
+                TRACKER_WEBHOOK_URL,
+                params={"user_id": user_id, "subscriber_id": subscriber_id},
+            )
+        logger.info(f"Tracker postback sent: user_id={user_id}, subscriber_id={subscriber_id}")
+    except Exception as exc:
+        logger.warning(f"Tracker postback failed for user {user_id}: {exc}")
+
 
 @router.message(CommandStart())
 async def cmd_start(message: Message, session: AsyncSession) -> None:
     user = message.from_user
     if user is None:
         return
+
+    # Extract subscriber_id from /start <subscriber_id>
+    start_args = message.text.split(maxsplit=1)
+    subscriber_id = start_args[1] if len(start_args) > 1 else None
+    if subscriber_id:
+        await _send_tracker_postback(user.id, subscriber_id)
 
     await upsert_user(
         session,
