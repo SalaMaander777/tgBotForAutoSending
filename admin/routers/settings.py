@@ -1,8 +1,10 @@
+import bcrypt
+
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from admin.auth import require_auth
+from admin.auth import get_admin_password_hash, require_auth, verify_password
 from core.crud.settings import get_all_settings, get_setting, set_setting
 from core.database import get_db
 
@@ -16,6 +18,8 @@ async def settings_form(
     username: str = Depends(require_auth),
 ) -> HTMLResponse:
     current_settings = await get_all_settings(session)
+    pw_success = request.query_params.get("pw_success")
+    pw_error = request.query_params.get("pw_error")
     return request.app.state.templates.TemplateResponse(
         "settings.html",
         {
@@ -23,6 +27,8 @@ async def settings_form(
             "username": username,
             "settings": current_settings,
             "success": None,
+            "pw_success": pw_success,
+            "pw_error": pw_error,
         },
     )
 
@@ -73,4 +79,37 @@ async def save_settings(
             "settings": current_settings,
             "success": "Настройки сохранены" + (" — бот перезапущен" if token_changed else ""),
         },
+    )
+
+
+@router.post("/settings/password")
+async def change_password(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+    session: AsyncSession = Depends(get_db),
+    _: str = Depends(require_auth),
+) -> RedirectResponse:
+    if new_password != confirm_password:
+        return RedirectResponse(
+            url="/admin/settings?pw_error=Новый+пароль+и+подтверждение+не+совпадают",
+            status_code=302,
+        )
+    if len(new_password) < 8:
+        return RedirectResponse(
+            url="/admin/settings?pw_error=Новый+пароль+должен+быть+не+короче+8+символов",
+            status_code=302,
+        )
+    current_hash = await get_admin_password_hash(session)
+    if not current_hash or not verify_password(current_password, current_hash):
+        return RedirectResponse(
+            url="/admin/settings?pw_error=Неверный+текущий+пароль",
+            status_code=302,
+        )
+    new_hash = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt(rounds=12)).decode()
+    await set_setting(session, "admin_password_hash", new_hash)
+    return RedirectResponse(
+        url="/admin/settings?pw_success=1",
+        status_code=302,
     )

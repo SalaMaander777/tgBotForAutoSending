@@ -7,6 +7,7 @@ DEFAULT_SETTINGS = {
     "channel_link": "",
     "bot_token": "",
     "channel_id": "",
+    "admin_password_hash": "",
 }
 
 

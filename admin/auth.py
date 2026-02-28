@@ -1,9 +1,11 @@
 import bcrypt
-from fastapi import Cookie, Form, HTTPException, Request, Response, status
+from fastapi import Cookie, Depends, Form, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from itsdangerous import BadSignature, SignatureExpired, TimestampSigner
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
+from core.database import get_db
 
 COOKIE_NAME = "admin_session"
 COOKIE_MAX_AGE = 60 * 60 * 8  # 8 hours
@@ -31,6 +33,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 
+async def get_admin_password_hash(session: AsyncSession) -> str:
+    from core.crud.settings import get_setting
+    db_hash = await get_setting(session, "admin_password_hash")
+    if db_hash:
+        return db_hash
+    return settings.admin_password_hash or ""
+
+
 def require_auth(request: Request, admin_session: str | None = Cookie(default=None)) -> str:
     if admin_session is None:
         raise HTTPException(
@@ -50,6 +60,7 @@ async def login_handler(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
+    session: AsyncSession = Depends(get_db),
 ) -> Response:
     if username != settings.admin_username:
         return request.app.state.templates.TemplateResponse(
@@ -58,7 +69,8 @@ async def login_handler(
             status_code=401,
         )
 
-    if not settings.admin_password_hash or not verify_password(password, settings.admin_password_hash):
+    hash_to_check = await get_admin_password_hash(session)
+    if not hash_to_check or not verify_password(password, hash_to_check):
         return request.app.state.templates.TemplateResponse(
             "login.html",
             {"request": request, "error": "Неверный логин или пароль"},
