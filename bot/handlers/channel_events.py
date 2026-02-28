@@ -2,6 +2,7 @@ from aiogram import Router
 from aiogram.filters.chat_member_updated import (
     IS_MEMBER,
     IS_NOT_MEMBER,
+    KICKED,
     ChatMemberUpdatedFilter,
 )
 from aiogram.types import ChatMemberUpdated
@@ -9,7 +10,7 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.crud.channel_events import create_event
-from core.crud.users import set_user_subscribed, upsert_user
+from core.crud.users import mark_user_blocked, mark_user_unblocked, set_user_subscribed, upsert_user
 
 router = Router()
 
@@ -30,6 +31,20 @@ async def on_user_subscribed(event: ChatMemberUpdated, session: AsyncSession) ->
     )
     await set_user_subscribed(session, user.id, bot_token=event.bot.token, subscribed=True)
     await create_event(session, user_id=user.id, event_type="subscribed")
+
+
+@router.my_chat_member(ChatMemberUpdatedFilter(IS_MEMBER >> KICKED))
+async def on_user_blocked_bot(event: ChatMemberUpdated, session: AsyncSession) -> None:
+    user = event.from_user
+    logger.info(f"User {user.id} blocked the bot")
+    await mark_user_blocked(session, user.id, bot_token=event.bot.token)
+
+
+@router.my_chat_member(ChatMemberUpdatedFilter(KICKED >> IS_MEMBER))
+async def on_user_unblocked_bot(event: ChatMemberUpdated, session: AsyncSession) -> None:
+    user = event.from_user
+    logger.info(f"User {user.id} unblocked the bot")
+    await mark_user_unblocked(session, user.id, bot_token=event.bot.token)
 
 
 @router.chat_member(ChatMemberUpdatedFilter(IS_MEMBER >> IS_NOT_MEMBER))

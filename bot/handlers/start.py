@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from bot.keyboards.inline import channel_join_keyboard
 from core.crud.settings import get_setting
-from core.crud.users import set_user_subscribed, upsert_user
+from core.crud.users import mark_user_unblocked, set_user_subscribed, upsert_user
 
 router = Router()
 
@@ -25,6 +25,9 @@ async def cmd_start(message: Message, session: AsyncSession) -> None:
         last_name=user.last_name,
         bot_token=message.bot.token,
     )
+
+    # If user had blocked the bot before and now writes again — unblock them
+    await mark_user_unblocked(session, user.id, bot_token=message.bot.token)
 
     welcome_text = await get_setting(session, "welcome_message")
     if not welcome_text:

@@ -6,7 +6,7 @@ from admin.auth import require_auth
 from core.config import settings as app_settings
 from core.crud.channel_events import count_subscribed, count_unsubscribed
 from core.crud.settings import get_setting
-from core.crud.users import count_users
+from core.crud.users import count_blocked, count_users
 from core.database import get_db
 
 router = APIRouter()
@@ -23,6 +23,7 @@ async def dashboard(
     total_users = await count_users(session, bot_token=bot_token)
     subscribed = await count_subscribed(session, bot_token=bot_token)
     unsubscribed = await count_unsubscribed(session, bot_token=bot_token)
+    blocked = await count_blocked(session, bot_token=bot_token)
 
     return request.app.state.templates.TemplateResponse(
         "dashboard.html",
@@ -32,5 +33,6 @@ async def dashboard(
             "total_users": total_users,
             "subscribed": subscribed,
             "unsubscribed": unsubscribed,
+            "blocked": blocked,
         },
     )

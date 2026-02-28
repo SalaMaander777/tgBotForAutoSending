@@ -73,10 +73,25 @@ async def count_users(session: AsyncSession, bot_token: str | None = None) -> in
     return result.scalar_one()
 
 
+async def count_blocked(session: AsyncSession, bot_token: str | None = None) -> int:
+    q = select(func.count()).select_from(User).where(User.is_blocked == True)  # noqa: E712
+    if bot_token:
+        q = q.where(User.bot_token == bot_token)
+    result = await session.execute(q)
+    return result.scalar_one()
+
+
 async def mark_user_blocked(session: AsyncSession, telegram_id: int, bot_token: str) -> None:
     user = await session.get(User, (telegram_id, bot_token))
     if user:
         user.is_blocked = True
+        await session.commit()
+
+
+async def mark_user_unblocked(session: AsyncSession, telegram_id: int, bot_token: str) -> None:
+    user = await session.get(User, (telegram_id, bot_token))
+    if user and user.is_blocked:
+        user.is_blocked = False
         await session.commit()
 
 

@@ -6,7 +6,9 @@
       "Bash(cd /d/Programing/заказы/tg_bot_23_02_2026 && docker-compose logs migrate 2>&1)",
       "Bash(cd /d/Programing/заказы/tg_bot_23_02_2026 && docker-compose logs app 2>&1)",
       "Bash(cd /d/Programing/заказы/tg_bot_23_02_2026 && docker-compose restart app 2>&1)",
-      "Bash(cd /d/Programing/заказы/tg_bot_23_02_2026 && sleep 3 && docker-compose logs app --tail=30 2>&1)"
+      "Bash(cd /d/Programing/заказы/tg_bot_23_02_2026 && sleep 3 && docker-compose logs app --tail=30 2>&1)",
+      "WebFetch(domain:docs.aiogram.dev)",
+      "WebSearch"
     ]
   }
 }

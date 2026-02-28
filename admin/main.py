@@ -41,13 +41,13 @@ async def _start_bot(app: FastAPI, bot: Bot) -> None:
         await bot.set_webhook(
             url=app_settings.webhook_url,
             secret_token=app_settings.webhook_secret,
-            allowed_updates=["message", "chat_member", "callback_query"],
+            allowed_updates=["message", "chat_member", "my_chat_member", "callback_query"],
             drop_pending_updates=True,
         )
         logger.info(f"Webhook set to {app_settings.webhook_url}")
     else:
         polling_task = asyncio.create_task(
-            dp.start_polling(bot, allowed_updates=["message", "chat_member", "callback_query"])
+            dp.start_polling(bot, allowed_updates=["message", "chat_member", "my_chat_member", "callback_query"])
         )
         app.state.polling_task = polling_task
         logger.info("Bot started in polling mode")
