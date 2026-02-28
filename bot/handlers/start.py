@@ -15,13 +15,16 @@ TRACKER_WEBHOOK_URL = "https://thedinator.com/tracker/bot/webhook/oOZ66Ig5"
 
 
 async def _send_tracker_postback(user_id: int, subscriber_id: str) -> None:
+    params = {"user_id": user_id, "subscriber_id": subscriber_id}
+    request = httpx.Request("GET", TRACKER_WEBHOOK_URL, params=params)
+    logger.info(f"Tracker postback request: {request.method} {request.url}")
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            await client.get(
-                TRACKER_WEBHOOK_URL,
-                params={"user_id": user_id, "subscriber_id": subscriber_id},
-            )
-        logger.info(f"Tracker postback sent: user_id={user_id}, subscriber_id={subscriber_id}")
+            response = await client.send(request)
+        logger.info(
+            f"Tracker postback sent: user_id={user_id}, subscriber_id={subscriber_id} "
+            f"→ status={response.status_code}"
+        )
     except Exception as exc:
         logger.warning(f"Tracker postback failed for user {user_id}: {exc}")
 
