@@ -34,10 +34,8 @@
                 <td>
                     {% if user.is_blocked %}
                     <span class="status-badge status-blocked">Заблокирован</span>
-                    {% elif user.is_subscribed %}
-                    <span class="status-badge status-active">Подписан</span>
                     {% else %}
-                    <span class="status-badge status-inactive">Отписан</span>
+                    <span class="status-badge status-active">Подписан</span>
                     {% endif %}
                 </td>
                 <td>{% if user.bot_token %}<code title="{{ user.bot_token }}">…{{ user.bot_token[-8:] }}</code>{% else %}—{% endif %}</td>
