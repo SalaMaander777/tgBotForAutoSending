@@ -99,33 +99,17 @@ async def send_user_message(
             },
         )
 
-    image_file_id: str | None = None
+    input_file: BufferedInputFile | None = None
     if has_image:
-        try:
-            from core.crud.settings import get_setting as _get_setting
-
-            image_bytes = await image.read()
-            input_file = BufferedInputFile(image_bytes, filename=image.filename)
-            channel_id_str = await _get_setting(session, "channel_id")
-            upload_chat = int(channel_id_str) if channel_id_str else 0
-            if not upload_chat:
-                raise ValueError("ID канала не настроен. Укажите его в /admin/settings.")
-            sent = await bot.send_photo(chat_id=upload_chat, photo=input_file)
-            try:
-                await bot.delete_message(chat_id=upload_chat, message_id=sent.message_id)
-            except Exception:
-                pass
-            if sent.photo:
-                image_file_id = sent.photo[-1].file_id
-        except Exception as exc:
-            error = f"Ошибка загрузки изображения: {exc}"
+        image_bytes = await image.read()
+        input_file = BufferedInputFile(image_bytes, filename=image.filename)
 
     if not error:
         try:
-            if image_file_id and text_clean:
-                await bot.send_photo(chat_id=user_id, photo=image_file_id, caption=text_clean, parse_mode="HTML")
-            elif image_file_id:
-                await bot.send_photo(chat_id=user_id, photo=image_file_id)
+            if input_file and text_clean:
+                await bot.send_photo(chat_id=user_id, photo=input_file, caption=text_clean, parse_mode="HTML")
+            elif input_file:
+                await bot.send_photo(chat_id=user_id, photo=input_file)
             else:
                 await bot.send_message(chat_id=user_id, text=text_clean, parse_mode="HTML")
             success = "Сообщение успешно отправлено"

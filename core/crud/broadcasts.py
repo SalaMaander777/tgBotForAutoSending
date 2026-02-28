@@ -30,6 +30,17 @@ async def update_broadcast_stats(
         await session.commit()
 
 
+async def update_broadcast_image_file_id(
+    session: AsyncSession,
+    broadcast_id: int,
+    image_file_id: str,
+) -> None:
+    broadcast = await session.get(Broadcast, broadcast_id)
+    if broadcast:
+        broadcast.image_file_id = image_file_id
+        await session.commit()
+
+
 async def get_broadcasts(session: AsyncSession, limit: int = 20) -> list[Broadcast]:
     result = await session.execute(
         select(Broadcast).order_by(Broadcast.sent_at.desc()).limit(limit)

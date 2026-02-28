@@ -42,51 +42,20 @@ async def send_broadcast(
 ) -> HTMLResponse:
     bot: Bot = request.app.state.bot
 
-    image_file_id: str | None = None
-    error: str | None = None
+    image_bytes: bytes | None = None
+    image_filename: str | None = None
+    has_image = False
 
-    # Upload image if provided to get a permanent file_id
     if image and image.filename:
-        try:
-            from aiogram.types import BufferedInputFile
-            from core.crud.settings import get_setting as _get_setting
-
-            image_bytes = await image.read()
-            input_file = BufferedInputFile(image_bytes, filename=image.filename)
-
-            # Send to the channel to get a file_id, then delete
-            channel_id_str = await _get_setting(session, "channel_id")
-            upload_chat = int(channel_id_str) if channel_id_str else 0
-            if not upload_chat:
-                raise ValueError("ID канала не настроен. Укажите его в /admin/settings.")
-            sent = await bot.send_photo(chat_id=upload_chat, photo=input_file)
-            try:
-                await bot.delete_message(chat_id=upload_chat, message_id=sent.message_id)
-            except Exception:
-                pass  # Deletion failure is non-critical
-            if sent.photo:
-                image_file_id = sent.photo[-1].file_id
-        except Exception as exc:
-            error = f"Ошибка загрузки изображения: {exc}"
-
-    if error:
-        broadcasts = await get_broadcasts(session)
-        return request.app.state.templates.TemplateResponse(
-            "broadcast.html",
-            {
-                "request": request,
-                "username": username,
-                "broadcasts": broadcasts,
-                "success": None,
-                "error": error,
-            },
-        )
+        image_bytes = await image.read()
+        image_filename = image.filename
+        has_image = True
 
     # Determine broadcast type
     text_clean = text.strip() if text else None
-    if image_file_id and text_clean:
+    if has_image and text_clean:
         broadcast_type = "image_text"
-    elif image_file_id:
+    elif has_image:
         broadcast_type = "image"
     elif text_clean:
         broadcast_type = "text"
@@ -103,20 +72,23 @@ async def send_broadcast(
             },
         )
 
+    # image_file_id is unknown yet — will be set after first send in run_broadcast
     broadcast = await create_broadcast(
         session,
         type=broadcast_type,
         text=text_clean,
-        image_file_id=image_file_id,
+        image_file_id=None,
     )
 
-    # Launch background task
+    # Launch background task — image bytes are passed directly
     asyncio.create_task(
         run_broadcast(
             bot=bot,
             broadcast_id=broadcast.id,
             text=text_clean,
-            image_file_id=image_file_id,
+            image_file_id=None,
+            image_bytes=image_bytes,
+            image_filename=image_filename,
             bot_token=bot.token,
         )
     )
