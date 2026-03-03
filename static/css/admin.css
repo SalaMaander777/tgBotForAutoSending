@@ -144,6 +144,12 @@ body {
     margin-left: auto;
 }
 
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* Stats Grid */
 .stats-grid {
     display: grid;
@@ -233,6 +239,12 @@ body {
 
 .btn-secondary { background: var(--border); color: var(--text); }
 .btn-secondary:hover { background: #d1d5db; }
+
+.btn-danger { background: #ef4444; color: #fff; }
+.btn-danger:hover { background: #dc2626; color: #fff; }
+
+.btn-success { background: #22c55e; color: #fff; }
+.btn-success:hover { background: #16a34a; color: #fff; }
 
 .btn-full { width: 100%; justify-content: center; }
 .btn-sm { padding: 6px 12px; font-size: 13px; }

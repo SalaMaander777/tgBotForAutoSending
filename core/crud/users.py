@@ -50,16 +50,25 @@ async def get_users_paginated(
     offset: int = 0,
     limit: int = 50,
     bot_token: str | None = None,
+    status: str | None = None,
 ) -> tuple[list[User], int]:
     count_q = select(func.count()).select_from(User)
     if bot_token:
         count_q = count_q.where(User.bot_token == bot_token)
+    if status == "active":
+        count_q = count_q.where(User.is_blocked == False)  # noqa: E712
+    elif status == "blocked":
+        count_q = count_q.where(User.is_blocked == True)  # noqa: E712
     count_result = await session.execute(count_q)
     total = count_result.scalar_one()
 
     q = select(User).order_by(User.joined_at.desc()).offset(offset).limit(limit)
     if bot_token:
         q = q.where(User.bot_token == bot_token)
+    if status == "active":
+        q = q.where(User.is_blocked == False)  # noqa: E712
+    elif status == "blocked":
+        q = q.where(User.is_blocked == True)  # noqa: E712
     result = await session.execute(q)
     users = list(result.scalars().all())
     return users, total

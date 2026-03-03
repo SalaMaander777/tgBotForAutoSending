@@ -11,8 +11,7 @@ from core.crud.users import mark_user_unblocked, set_user_subscribed, upsert_use
 
 router = Router()
 
-TRACKER_WEBHOOK_URL = "https://thedinator.com/tracker/bot/webhook/oOZ66Ig5"
-
+TRACKER_WEBHOOK_URL = "https://thedinator.com/tracker/bot/webhook/oOZ66Ig5/"
 
 async def _send_tracker_postback(user_id: int, subscriber_id: str) -> None:
     params = {"user_id": user_id, "subscriber_id": subscriber_id}
